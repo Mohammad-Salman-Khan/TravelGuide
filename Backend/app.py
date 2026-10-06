@@ -14,15 +14,37 @@ except ImportError:
 
 app = Flask(__name__)
 
-# CORS: restrict in production via env, permissive for local dev.
-# Set ALLOWED_ORIGINS="https://your-frontend.vercel.app,https://your-frontend.onrender.com"
-# or FRONTEND_URL="https://your-frontend.vercel.app".
+# CORS: allow the deployed Render frontend plus local dev origins.
+# Production frontend: https://travelguide-frontend.onrender.com
+# Override/extend via ALLOWED_ORIGINS or FRONTEND_URL env vars, e.g.
+# ALLOWED_ORIGINS="https://travelguide-frontend.onrender.com"
+# or FRONTEND_URL="https://travelguide-frontend.onrender.com".
+PRODUCTION_FRONTEND_URL = "https://travelguide-frontend.onrender.com"
+LOCAL_DEV_ORIGINS = [
+    "http://localhost:5000",
+    "http://127.0.0.1:5000",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+]
+
+
 def _allowed_origins():
     raw = os.getenv("ALLOWED_ORIGINS", "") or os.getenv("FRONTEND_URL", "")
     origins = [o.strip() for o in raw.split(",") if o.strip()]
-    return origins if origins else "*"
+    for default_origin in [PRODUCTION_FRONTEND_URL, *LOCAL_DEV_ORIGINS]:
+        if default_origin not in origins:
+            origins.append(default_origin)
+    return origins
 
-CORS(app, origins=_allowed_origins())
+
+CORS(
+    app,
+    origins=_allowed_origins(),
+    methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+)
 
 # Credentials come ONLY from environment. No defaults, no fallbacks.
 MURF_API_KEY = os.getenv("MURF_API_KEY")

@@ -129,13 +129,26 @@ voiceButtons.forEach(btn => {
 
 // Generate Audio guide button Logic
 
-// Use same-origin in production, localhost fallback for local dev
-// (set window.BACKEND_URL to override, e.g. deployed API URL).
-const GENERATE_AUDIO_GUIDE_API_URL = window.BACKEND_URL
-  ? `${window.BACKEND_URL}/generate-audio-guide`
-  : (window.location.protocol.startsWith('file')
-    ? 'http://127.0.0.1:5000/generate-audio-guide'
-    : '/generate-audio-guide');
+// Deployed backends:
+//   Frontend:  https://travelguide-frontend.onrender.com
+//   Backend:   https://travelguide-r0ro.onrender.com
+// Production (any non-local host) uses the Render backend by default.
+// Local dev (localhost / 127.0.0.1 / file://) uses http://127.0.0.1:5000.
+// Set window.BACKEND_URL (via config.js) to override both.
+const PRODUCTION_BACKEND_URL = 'https://travelguide-r0ro.onrender.com';
+const LOCAL_BACKEND_URL = 'http://127.0.0.1:5000';
+
+function resolveBackendBaseUrl() {
+  if (typeof window !== 'undefined' && window.BACKEND_URL) {
+    return String(window.BACKEND_URL).replace(/\/+$/, '');
+  }
+  const hostname = (typeof window !== 'undefined' && window.location && window.location.hostname) || '';
+  const protocol = (typeof window !== 'undefined' && window.location && window.location.protocol) || '';
+  const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '' || protocol.startsWith('file');
+  return isLocalHost ? LOCAL_BACKEND_URL : PRODUCTION_BACKEND_URL;
+}
+
+const GENERATE_AUDIO_GUIDE_API_URL = `${resolveBackendBaseUrl()}/generate-audio-guide`;
 
 generateButton.addEventListener('click', async () => {
   if (!state.place) {
